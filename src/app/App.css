@@ -1,0 +1,26 @@
+.custom-map {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  background: #f4f4f4;
+}
+
+#map {
+  height: 500px;
+  width: 600px;
+  border: solid 2px red;
+}
+
+@media (max-width: 600px) {
+  #map {
+    height: 80vh;
+    width: 95%;
+  }
+}
