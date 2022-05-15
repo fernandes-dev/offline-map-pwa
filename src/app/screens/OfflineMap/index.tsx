@@ -19,7 +19,15 @@ function Map() {
 
   function getLocation() {
     if (navigator.geolocation) {
-      navigator.geolocation.watchPosition(showPosition)
+      navigator.geolocation.watchPosition(
+        showPosition,
+        err => {
+          window.alert(`Erro ao atualizar localização - ${err.message}`)
+        },
+        {
+          timeout: 2000,
+        }
+      )
     } else {
       window.alert('Geolocation is not supported by this browser.')
     }
@@ -66,6 +74,7 @@ function Map() {
 
   return (
     <>
+      <div>Posição atual: {JSON.stringify(position)}</div>
       {position && (
         // @ts-ignore
         <MapContainer id="map" center={position} zoom={13} ref={setMap}>
