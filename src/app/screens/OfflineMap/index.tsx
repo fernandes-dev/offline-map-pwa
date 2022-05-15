@@ -9,6 +9,8 @@ import 'leaflet.offline'
 function Map() {
   const [position, setPosition] = useState<LatLng>()
   const [map, setMap] = useState(null)
+  const [progressSaveMap, setProgressSaveMap] = useState(0)
+  const [totalLayerToSave, setTotalLayersToSave] = useState(0)
 
   function showPosition(foundPosition: any) {
     setPosition({
@@ -65,6 +67,14 @@ function Map() {
       })
 
       controlSaveTiles.addTo(map!)
+
+      tileLayerOffline.on('savestart', (e: any) => {
+        setTotalLayersToSave(e._tilesforSave.length)
+      })
+
+      tileLayerOffline.on('savetileend', () => {
+        setProgressSaveMap(currentProgress => currentProgress + 1)
+      })
     }
   }, [map])
 
@@ -75,6 +85,11 @@ function Map() {
   return (
     <>
       <div>Posição atual: {JSON.stringify(position)}</div>
+      {progressSaveMap > 0 && (
+        <progress id="file" value={Number((progressSaveMap / totalLayerToSave) * 100).toFixed(2)} max="100">
+          {Number((progressSaveMap / totalLayerToSave) * 100).toFixed(2)}%
+        </progress>
+      )}
       {position && (
         // @ts-ignore
         <MapContainer id="map" center={position} zoom={13} ref={setMap}>
