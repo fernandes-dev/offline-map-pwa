@@ -1,6 +1,6 @@
 /* eslint-disable no-alert */
 import { MapContainer, TileLayer } from 'react-leaflet'
-import React, { useEffect, useState } from 'react'
+import React, { FormEvent, useEffect, useState } from 'react'
 import Leaflet, { LatLng } from 'leaflet'
 import { PositionMarker } from '../../components/PositionMarker'
 
@@ -82,9 +82,32 @@ function Map() {
     getLocation()
   }, [])
 
+  function handleSubmitCoords(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    const lat = (document.getElementById('lat') as any)?.value
+    const lng = (document.getElementById('long') as any)?.value
+
+    setPosition({
+      lat,
+      lng,
+    } as LatLng)
+  }
+
   return (
     <>
       <div>Posição atual: {JSON.stringify(position)}</div>
+      <form onSubmit={handleSubmitCoords}>
+        <label htmlFor="lat">
+          Latitude
+          <input id="lat" type="text" />
+        </label>
+        <label htmlFor="long">
+          Longitude
+          <input id="long" type="text" />
+        </label>
+        <button type="submit">Navegar</button>
+      </form>
       {progressSaveMap > 0 && (
         <progress id="file" value={Number((progressSaveMap / totalLayerToSave) * 100).toFixed(2)} max="100">
           {Number((progressSaveMap / totalLayerToSave) * 100).toFixed(2)}%
