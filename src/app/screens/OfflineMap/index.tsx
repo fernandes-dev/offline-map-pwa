@@ -8,7 +8,7 @@ import 'leaflet.offline'
 
 function Map() {
   const [position, setPosition] = useState<LatLng>()
-  const [map, setMap] = useState(null)
+  const [map, setMap] = useState<any>(null)
   const [progressSaveMap, setProgressSaveMap] = useState(0)
   const [totalLayerToSave, setTotalLayersToSave] = useState(0)
 
@@ -82,6 +82,10 @@ function Map() {
     getLocation()
   }, [])
 
+  function navigatoToPosition(data?: LatLng, zoomLevel = 13): void {
+    if (data) map?.setView(data, zoomLevel)
+  }
+
   function handleSubmitCoords(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -93,6 +97,10 @@ function Map() {
       lng,
     } as LatLng)
   }
+
+  useEffect(() => {
+    navigatoToPosition(position)
+  }, [position])
 
   return (
     <>
