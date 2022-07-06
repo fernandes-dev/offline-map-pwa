@@ -3,7 +3,6 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 100%;
   width: 100%;
   position: absolute;
   top: 0;
@@ -18,9 +17,75 @@
   border: solid 2px red;
 }
 
+.forms-box {
+  padding: 50px 0;
+  display: flex;
+}
+
+.forms-title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.view-location-form {
+  width: 250px;
+  margin-right: 20px;
+}
+
+.add-checkpoint-form {
+  width: 250px;
+  margin-left: 20px;
+}
+
+.map-box {
+  display: flex;
+  justify-content: space-between;
+}
+
+.checkpoint {
+  padding: 8px;
+  background: white;
+  border-radius: 3px;
+  margin: 15px 0;
+}
+
+.checkpoint-body {
+  margin-bottom: 5px;
+}
+
+.checkpoint-actions {
+  display: flex;
+  justify-content: end;
+}
+
+.savetiles {
+  display: none;
+}
+
+.rmtiles {
+  display: none;
+}
+
 @media (max-width: 600px) {
+  .custom-map {
+    overflow: auto;
+  }
+
   #map {
-    height: 80vh;
+    width: 100%;
+  }
+
+  .forms-box {
+    display: block;
+  }
+
+  .map-box {
     width: 95%;
+    display: block;
+  }
+
+  .add-checkpoint-form {
+    margin-top: 10px;
+    margin-left: 0;
   }
 }

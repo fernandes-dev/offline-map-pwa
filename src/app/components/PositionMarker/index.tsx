@@ -3,18 +3,20 @@ import React from 'react'
 import { Marker, Popup } from 'react-leaflet'
 import { LatLngExpression } from 'leaflet'
 
-function PositionMarker({ position }: { position: LatLngExpression }) {
+function PositionMarker({ position, text }: { position: LatLngExpression; text?: string }) {
   return (
     <>
       {position && (
         <Marker position={position!}>
           <Popup minWidth={90}>
-            <span>Você está aqui!</span>
+            <span>{text}</span>
           </Popup>
         </Marker>
       )}
     </>
   )
 }
+
+PositionMarker.defaultProps = { text: '' }
 
 export { PositionMarker }
