@@ -33,7 +33,6 @@ function Map() {
       return navigator.geolocation.watchPosition(
         updatePosition,
         err => {
-          console.log('erro ao atualizar localização', err)
           window.alert(`Erro ao atualizar localização - ${err.message}`)
         },
         {
