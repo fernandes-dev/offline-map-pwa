@@ -5,6 +5,7 @@ import Leaflet, { Icon, LatLng } from 'leaflet'
 import { PositionMarker } from '../../components/PositionMarker'
 
 import 'leaflet.offline'
+import { MakeTileLayerOffline } from './functions/TileLayerOffline'
 
 interface ICheckpoint {
   position: Pick<LatLng, 'lat' | 'lng'>
@@ -12,7 +13,7 @@ interface ICheckpoint {
 }
 
 function Map() {
-  const [position, setPosition] = useState<LatLng>()
+  const [position, setPosition] = useState<Pick<LatLng, 'lat' | 'lng'>>()
   const [map, setMap] = useState<any>(null)
   const [progressSaveMap, setProgressSaveMap] = useState(0)
   const [totalLayerToSave, setTotalLayersToSave] = useState(0)
@@ -24,7 +25,7 @@ function Map() {
       setPosition({
         lng: newPosition.coords.longitude,
         lat: newPosition.coords.latitude,
-      } as LatLng)
+      })
     }
   }
 
@@ -41,49 +42,20 @@ function Map() {
         }
       )
     }
-    window.alert('Geolocation is not supported by this browser.')
+    window.alert('Seu dispositivo não tem suporte à geolocalização')
 
     return 0
   }
 
   useEffect(() => {
     if (map) {
-      // @ts-ignore
-      if (!Leaflet.tileLayer?.offline) return
-      // @ts-ignore
-      const tileLayerOffline = Leaflet.tileLayer?.offline('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        minZoom: 13,
+      const tileLayerOffline = MakeTileLayerOffline(Leaflet, map)
+
+      tileLayerOffline?.on('savestart', e => {
+        setTotalLayersToSave(e.lengthToBeSaved)
       })
 
-      tileLayerOffline.addTo(map)
-
-      // @ts-ignore
-      const controlSaveTiles = Leaflet.control.savetiles(tileLayerOffline, {
-        zoomlevels: [13, 14, 15, 16],
-        confirm(layer: any, succescallback: any) {
-          // eslint-disable-next-line no-alert
-          if (window.confirm(`Salvar ${layer._tilesforSave.length} blocos do mapa`)) {
-            succescallback()
-          }
-        },
-        confirmRemoval(layer: any, successCallback: any) {
-          // eslint-disable-next-line no-alert
-          if (window.confirm('Deseja remover o mapa da memória do seu dispositivo?')) {
-            successCallback()
-          }
-        },
-        saveText: 'salvar',
-        rmText: 'excluir',
-      })
-
-      controlSaveTiles.addTo(map!)
-
-      tileLayerOffline.on('savestart', (e: any) => {
-        setTotalLayersToSave(e._tilesforSave.length)
-      })
-
-      tileLayerOffline.on('savetileend', () => {
+      tileLayerOffline?.on('savetileend', () => {
         setProgressSaveMap(currentProgress => currentProgress + 1)
       })
     }
@@ -107,10 +79,7 @@ function Map() {
     const lat = (document.getElementById('lat') as any)?.value
     const lng = (document.getElementById('long') as any)?.value
 
-    const newPosition = {
-      lat,
-      lng,
-    } as LatLng
+    const newPosition = { lat, lng }
 
     setPosition(newPosition)
     navigatoTePosition(newPosition)
@@ -143,7 +112,6 @@ function Map() {
   const renderMap = useMemo(() => {
     if (position)
       return (
-        // @ts-ignore
         <MapContainer id="map" center={position} zoom={13} ref={setMap} scrollWheelZoom={false}>
           <TileLayer
             id="mapbox/streets-v11"
