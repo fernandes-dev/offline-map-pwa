@@ -1,16 +1,13 @@
 /* eslint-disable no-alert */
-import { MapContainer, Marker, TileLayer } from 'react-leaflet'
+import { MapContainer, TileLayer } from 'react-leaflet'
 import React, { FormEvent, useEffect, useMemo, useState } from 'react'
-import Leaflet, { Icon, LatLng } from 'leaflet'
+import Leaflet, { LatLng } from 'leaflet'
 import { PositionMarker } from '../../components/PositionMarker'
 
 import 'leaflet.offline'
 import { MakeTileLayerOffline } from './functions/TileLayerOffline'
-
-interface ICheckpoint {
-  position: Pick<LatLng, 'lat' | 'lng'>
-  text?: string
-}
+import { ICheckpoint } from './types/ICheckpoint'
+import { CheckpointMarker } from './components/CheckpointMarker'
 
 function Map() {
   const [position, setPosition] = useState<Pick<LatLng, 'lat' | 'lng'>>()
@@ -47,42 +44,8 @@ function Map() {
     return 0
   }
 
-  useEffect(() => {
-    if (map) {
-      const tileLayerOffline = MakeTileLayerOffline(Leaflet, map)
-
-      tileLayerOffline?.on('savestart', e => {
-        setTotalLayersToSave(e.lengthToBeSaved)
-      })
-
-      tileLayerOffline?.on('savetileend', () => {
-        setProgressSaveMap(currentProgress => currentProgress + 1)
-      })
-    }
-  }, [map])
-
-  useEffect(() => {
-    const watchPositionID = getLocation()
-
-    return () => {
-      navigator.geolocation.clearWatch(watchPositionID)
-    }
-  }, [])
-
   function navigatoTePosition(data: Pick<LatLng, 'lat' | 'lng'>, zoomLevel?: number): void {
     if (data) map?.setView(data, zoomLevel || map.getZoom())
-  }
-
-  function handleSubmitCoords(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    const lat = (document.getElementById('lat') as any)?.value
-    const lng = (document.getElementById('long') as any)?.value
-
-    const newPosition = { lat, lng }
-
-    setPosition(newPosition)
-    navigatoTePosition(newPosition)
   }
 
   function handleSubmitCheckpoint(event: FormEvent<HTMLFormElement>) {
@@ -122,14 +85,19 @@ function Map() {
 
           {checkpoints.length > 0 &&
             checkpoints.map(marker => (
-              <Marker
+              <CheckpointMarker
                 key={Math.random()}
-                position={marker.position}
-                icon={
-                  new Icon({
-                    iconUrl: '/icons/circle-icon.png',
-                    iconSize: [25, 25],
-                  })
+                marker={marker}
+                positionToCompare={position}
+                checkPointDetails={
+                  <>
+                    <div>{marker.text}</div>
+                    <div>
+                      <b>Coordenadas</b>
+                    </div>
+                    <div>latitude: {marker.position.lat}</div>
+                    <div>longitude: {marker.position.lng}</div>
+                  </>
                 }
               />
             ))}
@@ -147,22 +115,32 @@ function Map() {
     if (localStorageCheckpoints) setCheckpoints(JSON.parse(localStorageCheckpoints))
   }, [])
 
+  useEffect(() => {
+    const watchPositionID = getLocation()
+
+    return () => {
+      navigator.geolocation.clearWatch(watchPositionID)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (map) {
+      const tileLayerOffline = MakeTileLayerOffline(Leaflet, map)
+
+      tileLayerOffline?.on('savestart', e => {
+        setTotalLayersToSave(e.lengthToBeSaved)
+      })
+
+      tileLayerOffline?.on('savetileend', () => {
+        setProgressSaveMap(currentProgress => currentProgress + 1)
+      })
+    }
+  }, [map])
+
   return (
     <>
       <div>Posição atual: {JSON.stringify(position)}</div>
       <div className="forms-box">
-        <form className="view-location-form" onSubmit={handleSubmitCoords}>
-          <div className="forms-title">Visualizar localização:</div>
-          <label htmlFor="lat">
-            Latitude
-            <input id="lat" type="text" />
-          </label>
-          <label htmlFor="long">
-            Longitude
-            <input id="long" type="text" />
-          </label>
-          <button type="submit">Navegar</button>
-        </form>
         <form className="add-checkpoint-form" onSubmit={handleSubmitCheckpoint}>
           <div className="forms-title">Adicionar ponto de Controle:</div>
           <label htmlFor="latC">
@@ -204,6 +182,9 @@ function Map() {
               }}
             >
               Exluir dados da memória
+            </button>
+            <button type="button" onClick={() => map?.setView(position)}>
+              Ver minha posição
             </button>
           </div>
           <div>{renderMap}</div>
