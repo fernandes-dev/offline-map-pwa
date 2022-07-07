@@ -1,6 +1,6 @@
-import { Icon } from 'leaflet'
 import { Marker, Popup } from 'react-leaflet'
 import React, { ReactNode } from 'react'
+import { Icon } from 'leaflet'
 import { ICheckpoint } from '../../types/ICheckpoint'
 import { ICoords } from '../../types/ICoords'
 import { CalculateDistanceBetweenCoords } from '../../functions/CalculateDistanceBetweenCoords'
@@ -11,7 +11,7 @@ interface IProps {
   positionToCompare?: ICoords
 }
 
-export function CheckpointMarker({ marker, checkPointDetails, positionToCompare }: IProps) {
+function CheckpointMarker({ marker, checkPointDetails, positionToCompare }: IProps) {
   const distanceInMeters = CalculateDistanceBetweenCoords(marker.position, positionToCompare)
   const distanceInKm = distanceInMeters > 0 ? (distanceInMeters / 1000).toFixed(2) : 0
 
@@ -25,17 +25,16 @@ export function CheckpointMarker({ marker, checkPointDetails, positionToCompare 
         })
       }
       title={marker.text}
-      children={
-        checkPointDetails && (
-          <Popup>
-            {checkPointDetails}
+    >
+      <Popup>
+        {checkPointDetails}
 
-            <>
-              <div>Distância atual: {distanceInKm} km</div>
-            </>
-          </Popup>
-        )
-      }
-    />
+        <>
+          <div>Distância atual: {distanceInKm} km</div>
+        </>
+      </Popup>
+    </Marker>
   )
 }
+
+export { CheckpointMarker }

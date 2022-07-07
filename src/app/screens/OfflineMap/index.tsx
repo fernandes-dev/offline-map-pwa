@@ -1,6 +1,6 @@
 /* eslint-disable no-alert */
 import { MapContainer, TileLayer } from 'react-leaflet'
-import React, { FormEvent, useEffect, useMemo, useState } from 'react'
+import React, { FormEvent, useEffect, useState } from 'react'
 import Leaflet, { LatLng } from 'leaflet'
 import { PositionMarker } from '../../components/PositionMarker'
 
@@ -18,12 +18,10 @@ function Map() {
   const [checkpoints, setCheckpoints] = useState<ICheckpoint[]>([])
 
   function updatePosition(newPosition: any): void {
-    if (newPosition.coords.longitude !== position?.lng || newPosition.coords.latitude !== position?.lat) {
-      setPosition({
-        lng: newPosition.coords.longitude,
-        lat: newPosition.coords.latitude,
-      })
-    }
+    setPosition({
+      lng: newPosition.coords.longitude,
+      lat: newPosition.coords.latitude,
+    })
   }
 
   function getLocation(): number {
@@ -55,6 +53,7 @@ function Map() {
     const lng = (document.getElementById('longC') as any)?.value
 
     const newCheckpoint: ICheckpoint = {
+      id: Math.random(),
       position: { lat, lng },
       text: `Ponto de controle - ${checkpoints.length}`,
     }
@@ -62,7 +61,6 @@ function Map() {
     const newCheckpoints = [...checkpoints, newCheckpoint]
     setCheckpoints(newCheckpoints)
     localStorage.setItem('map-checkpoints', JSON.stringify(newCheckpoints))
-    map?.setView(map?.getCenter())
   }
 
   function deleteCheckpoint(index: number) {
@@ -72,7 +70,7 @@ function Map() {
     localStorage.setItem('map-checkpoints', JSON.stringify(newCheckpoints))
   }
 
-  const renderMap = useMemo(() => {
+  const renderMap = () => {
     if (position)
       return (
         <MapContainer id="map" center={position} zoom={13} ref={setMap} scrollWheelZoom={false}>
@@ -86,12 +84,12 @@ function Map() {
           {checkpoints.length > 0 &&
             checkpoints.map(marker => (
               <CheckpointMarker
-                key={Math.random()}
+                key={marker.id}
                 marker={marker}
                 positionToCompare={position}
                 checkPointDetails={
                   <>
-                    <div>{marker.text}</div>
+                    <h3>{marker.text}</h3>
                     <div>
                       <b>Coordenadas</b>
                     </div>
@@ -103,9 +101,8 @@ function Map() {
             ))}
         </MapContainer>
       )
-
     return <></>
-  }, [position, checkpoints])
+  }
 
   useEffect(() => {
     if (position) navigatoTePosition(position)
@@ -113,17 +110,9 @@ function Map() {
     const localStorageCheckpoints = localStorage.getItem('map-checkpoints')
 
     if (localStorageCheckpoints) setCheckpoints(JSON.parse(localStorageCheckpoints))
-  }, [])
 
-  useEffect(() => {
     const watchPositionID = getLocation()
 
-    return () => {
-      navigator.geolocation.clearWatch(watchPositionID)
-    }
-  }, [])
-
-  useEffect(() => {
     if (map) {
       const tileLayerOffline = MakeTileLayerOffline(Leaflet, map)
 
@@ -135,7 +124,11 @@ function Map() {
         setProgressSaveMap(currentProgress => currentProgress + 1)
       })
     }
-  }, [map])
+
+    return () => {
+      navigator.geolocation.clearWatch(watchPositionID)
+    }
+  }, [])
 
   return (
     <>
@@ -187,7 +180,7 @@ function Map() {
               Ver minha posição
             </button>
           </div>
-          <div>{renderMap}</div>
+          <div>{renderMap()}</div>
         </div>
         <div style={{ margin: '0 10px' }} />
         <div>
