@@ -11,6 +11,7 @@
     "@types/react": "^18.0.9",
     "@types/react-dom": "^18.0.4",
     "leaflet": "^1.8.0",
+    "leaflet.locatecontrol": "^0.76.1",
     "leaflet.offline": "^2.2.0",
     "react": "^18.1.0",
     "react-dom": "^18.1.0",

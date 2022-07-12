@@ -26,8 +26,11 @@ declare namespace L {
     _tilesforSave: OfflineTile[]
   }
 
-  export interface tileLayerOffline {
+  export interface CustomLayer {
     addTo(map: L.Map): void
+  }
+
+  export interface tileLayerOffline extends CustomLayer {
     on(event: 'savetileend' | 'savestart', callback: (e: SaveTileEnd) => void)
   }
 
@@ -50,5 +53,7 @@ declare namespace L {
         rmText: string
       }
     ): tileLayerOffline
+
+    export function locate(...args): CustomLayer
   }
 }

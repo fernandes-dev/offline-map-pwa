@@ -2,18 +2,23 @@
 import { MapContainer, TileLayer } from 'react-leaflet'
 import React, { FormEvent, useEffect, useState } from 'react'
 import Leaflet, { LatLng } from 'leaflet'
-import { PositionMarker } from '../../components/PositionMarker'
 
 import 'leaflet.offline'
+import 'leaflet.locatecontrol'
 import { MakeTileLayerOffline } from './functions/TileLayerOffline'
 import { ICheckpoint } from './types/ICheckpoint'
 import { CheckpointMarker } from './components/CheckpointMarker'
 
+type ILatLng = Pick<LatLng, 'lat' | 'lng'>
+
 function Map() {
-  const [position, setPosition] = useState<Pick<LatLng, 'lat' | 'lng'>>()
-  const [map, setMap] = useState<any>(null)
+  const [position, setPosition] = useState<ILatLng>()
+  const [map, setMap] = useState<Leaflet.Map | null>(null)
+  const [mapControls, setMapControls] = useState<boolean>(false)
   const [progressSaveMap, setProgressSaveMap] = useState(0)
   const [totalLayerToSave, setTotalLayersToSave] = useState(0)
+  const [polylines, setPolylines] = useState<ILatLng[][]>([])
+  const [mapPolyline, setMapPolyline] = useState<Leaflet.Polyline<any>>()
 
   const [checkpoints, setCheckpoints] = useState<ICheckpoint[]>([])
 
@@ -42,7 +47,7 @@ function Map() {
     return 0
   }
 
-  function navigatoTePosition(data: Pick<LatLng, 'lat' | 'lng'>, zoomLevel?: number): void {
+  function navigatoTePosition(data: ILatLng, zoomLevel?: number): void {
     if (data) map?.setView(data, zoomLevel || map.getZoom())
   }
 
@@ -70,6 +75,51 @@ function Map() {
     localStorage.setItem('map-checkpoints', JSON.stringify(newCheckpoints))
   }
 
+  function verifyPolylineExists(destiny: ILatLng): boolean {
+    if (!position) return false
+
+    const existsPolyline = polylines.find(p =>
+      p.find(p2 => String(p2.lng) === String(destiny.lng) && String(p2.lat) === String(destiny.lat))
+    )
+
+    return !!existsPolyline
+  }
+
+  function handleAddPolyline(destiny: ILatLng) {
+    if (!map) return
+
+    const existsPolyline = verifyPolylineExists(destiny)
+
+    if (existsPolyline || !position) return
+
+    if (mapPolyline) {
+      mapPolyline.setLatLngs([...polylines, [destiny, position]])
+    } else {
+      const polyline = Leaflet.polyline([...polylines, [destiny, position]], { color: 'red' })
+
+      polyline.addTo(map)
+
+      setMapPolyline(polyline)
+    }
+
+    setPolylines([...polylines, [destiny, position]])
+  }
+
+  function handleRemovePolyline(destiny: ILatLng) {
+    if (!map) return
+
+    const polygonIndex = polylines.findIndex(p =>
+      p.find(p2 => String(p2.lng) === String(destiny.lng) && String(p2.lat) === String(destiny.lat))
+    )
+
+    const newPolylines = [...polylines]
+    newPolylines.splice(polygonIndex, 1)
+
+    mapPolyline?.setLatLngs(newPolylines)
+
+    setPolylines(newPolylines)
+  }
+
   const renderMap = () => {
     if (position)
       return (
@@ -79,7 +129,7 @@ function Map() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <PositionMarker position={position} text="Você está aqui" />
+          {/* <PositionMarker position={position} text="Você está aqui" /> */}
 
           {checkpoints.length > 0 &&
             checkpoints.map(marker => (
@@ -95,6 +145,15 @@ function Map() {
                     </div>
                     <div>latitude: {marker.position.lat}</div>
                     <div>longitude: {marker.position.lng}</div>
+                    {!verifyPolylineExists(marker.position) ? (
+                      <button type="button" onClick={() => handleAddPolyline(marker.position)}>
+                        Marcar rota
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => handleRemovePolyline(marker.position)}>
+                        Excluir rota
+                      </button>
+                    )}
                   </>
                 }
               />
@@ -113,26 +172,51 @@ function Map() {
 
     const watchPositionID = getLocation()
 
-    if (map) {
-      const tileLayerOffline = MakeTileLayerOffline(Leaflet, map)
-
-      tileLayerOffline?.on('savestart', e => {
-        setTotalLayersToSave(e.lengthToBeSaved)
-      })
-
-      tileLayerOffline?.on('savetileend', () => {
-        setProgressSaveMap(currentProgress => currentProgress + 1)
-      })
-    }
-
     return () => {
       navigator.geolocation.clearWatch(watchPositionID)
     }
   }, [])
 
+  useEffect(() => {
+    if (map) {
+      if (map && !mapControls) {
+        const tileLayerOffline = MakeTileLayerOffline(Leaflet, map)
+
+        tileLayerOffline?.on('savestart', e => {
+          setTotalLayersToSave(e.lengthToBeSaved)
+        })
+
+        tileLayerOffline?.on('savetileend', () => {
+          setProgressSaveMap(currentProgress => currentProgress + 1)
+        })
+
+        setMapControls(true)
+      }
+
+      Leaflet.control
+        .locate({
+          strings: {
+            popup: ({ distance }: { distance: number; unit: number }) => `você está a ${distance} metros deste ponto.`,
+          },
+        })
+        .addTo(map)
+    }
+
+    return () => {
+      setMapControls(false)
+    }
+  }, [map])
+
+  // useEffect(() => {
+  //   if (polylines.length > 0 && map) {
+  //
+  //   }
+  // }, [polylines])
+
   return (
     <>
       <div>Posição atual: {JSON.stringify(position)}</div>
+
       <div className="forms-box">
         <form className="add-checkpoint-form" onSubmit={handleSubmitCheckpoint}>
           <div className="forms-title">Adicionar ponto de Controle:</div>
@@ -176,7 +260,7 @@ function Map() {
             >
               Exluir dados da memória
             </button>
-            <button type="button" onClick={() => map?.setView(position)}>
+            <button type="button" onClick={() => map?.setView(position!)}>
               Ver minha posição
             </button>
           </div>
