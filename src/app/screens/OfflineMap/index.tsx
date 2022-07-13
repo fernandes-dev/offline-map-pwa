@@ -12,40 +12,14 @@ import { CheckpointMarker } from './components/CheckpointMarker'
 type ILatLng = Pick<LatLng, 'lat' | 'lng'>
 
 function Map() {
-  const [position, setPosition] = useState<ILatLng>()
   const [map, setMap] = useState<Leaflet.Map | null>(null)
+  const [position, setPosition] = useState<ILatLng>()
   const [mapControls, setMapControls] = useState<boolean>(false)
   const [progressSaveMap, setProgressSaveMap] = useState(0)
   const [totalLayerToSave, setTotalLayersToSave] = useState(0)
   const [polylines, setPolylines] = useState<ILatLng[][]>([])
   const [mapPolyline, setMapPolyline] = useState<Leaflet.Polyline<any>>()
-
   const [checkpoints, setCheckpoints] = useState<ICheckpoint[]>([])
-
-  function updatePosition(newPosition: any): void {
-    setPosition({
-      lng: newPosition.coords.longitude,
-      lat: newPosition.coords.latitude,
-    })
-  }
-
-  function getLocation(): number {
-    if (navigator.geolocation) {
-      return navigator.geolocation.watchPosition(
-        updatePosition,
-        err => {
-          window.alert(`Erro ao atualizar localização - ${err.message}`)
-        },
-        {
-          timeout: 3000,
-          enableHighAccuracy: true,
-        }
-      )
-    }
-    window.alert('Seu dispositivo não tem suporte à geolocalização')
-
-    return 0
-  }
 
   function navigatoTePosition(data: ILatLng, zoomLevel?: number): void {
     if (data) map?.setView(data, zoomLevel || map.getZoom())
@@ -68,13 +42,6 @@ function Map() {
     localStorage.setItem('map-checkpoints', JSON.stringify(newCheckpoints))
   }
 
-  function deleteCheckpoint(index: number) {
-    const newCheckpoints = checkpoints.filter((c, currentIndex) => currentIndex !== index)
-
-    setCheckpoints(newCheckpoints)
-    localStorage.setItem('map-checkpoints', JSON.stringify(newCheckpoints))
-  }
-
   function verifyPolylineExists(destiny: ILatLng): boolean {
     if (!position) return false
 
@@ -85,7 +52,7 @@ function Map() {
     return !!existsPolyline
   }
 
-  function handleAddPolyline(destiny: ILatLng) {
+  function handleAddPolyline(destiny: ILatLng): void {
     if (!map) return
 
     const existsPolyline = verifyPolylineExists(destiny)
@@ -94,12 +61,15 @@ function Map() {
 
     if (mapPolyline) {
       mapPolyline.setLatLngs([...polylines, [destiny, position]])
+
+      map.fitBounds(mapPolyline.getBounds())
     } else {
       const polyline = Leaflet.polyline([...polylines, [destiny, position]], { color: 'red' })
 
       polyline.addTo(map)
 
       setMapPolyline(polyline)
+      map.fitBounds(polyline.getBounds())
     }
 
     setPolylines([...polylines, [destiny, position]])
@@ -120,98 +90,122 @@ function Map() {
     setPolylines(newPolylines)
   }
 
+  function deleteCheckpoint(index: number) {
+    handleRemovePolyline(checkpoints[index].position)
+
+    const newCheckpoints = checkpoints.filter((c, currentIndex) => currentIndex !== index)
+
+    setCheckpoints(newCheckpoints)
+    localStorage.setItem('map-checkpoints', JSON.stringify(newCheckpoints))
+  }
+
+  const renderCheckpoints = () => {
+    return (
+      checkpoints.length > 0 &&
+      checkpoints.map(marker => (
+        <CheckpointMarker
+          key={marker.id}
+          marker={marker}
+          positionToCompare={position}
+          checkPointDetails={
+            <>
+              <h3>{marker.text}</h3>
+              <div>
+                <b>Coordenadas</b>
+              </div>
+              <div>latitude: {marker.position.lat}</div>
+              <div>longitude: {marker.position.lng}</div>
+              {!verifyPolylineExists(marker.position) ? (
+                <button type="button" onClick={() => handleAddPolyline(marker.position)}>
+                  Marcar rota
+                </button>
+              ) : (
+                <button type="button" onClick={() => handleRemovePolyline(marker.position)}>
+                  Excluir rota
+                </button>
+              )}
+            </>
+          }
+        />
+      ))
+    )
+  }
+
   const renderMap = () => {
-    if (position)
-      return (
+    return (
+      position && (
         <MapContainer id="map" center={position} zoom={13} ref={setMap} scrollWheelZoom={false}>
           <TileLayer
             id="mapbox/streets-v11"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          {/* <PositionMarker position={position} text="Você está aqui" /> */}
-
-          {checkpoints.length > 0 &&
-            checkpoints.map(marker => (
-              <CheckpointMarker
-                key={marker.id}
-                marker={marker}
-                positionToCompare={position}
-                checkPointDetails={
-                  <>
-                    <h3>{marker.text}</h3>
-                    <div>
-                      <b>Coordenadas</b>
-                    </div>
-                    <div>latitude: {marker.position.lat}</div>
-                    <div>longitude: {marker.position.lng}</div>
-                    {!verifyPolylineExists(marker.position) ? (
-                      <button type="button" onClick={() => handleAddPolyline(marker.position)}>
-                        Marcar rota
-                      </button>
-                    ) : (
-                      <button type="button" onClick={() => handleRemovePolyline(marker.position)}>
-                        Excluir rota
-                      </button>
-                    )}
-                  </>
-                }
-              />
-            ))}
+          {renderCheckpoints()}
         </MapContainer>
       )
-    return <></>
+    )
+  }
+
+  function setMapViewOnUserLocation(): void {
+    if (window.navigator.geolocation)
+      navigator.geolocation.getCurrentPosition(e => {
+        const currentPosition = { lng: e.coords.longitude, lat: e.coords.latitude }
+
+        setPosition(currentPosition)
+      })
+    else window.alert('Seu dispositivo não tem suporte a geolocalização')
   }
 
   useEffect(() => {
     if (position) navigatoTePosition(position)
 
+    setMapViewOnUserLocation()
+
     const localStorageCheckpoints = localStorage.getItem('map-checkpoints')
 
     if (localStorageCheckpoints) setCheckpoints(JSON.parse(localStorageCheckpoints))
-
-    const watchPositionID = getLocation()
-
-    return () => {
-      navigator.geolocation.clearWatch(watchPositionID)
-    }
   }, [])
 
-  useEffect(() => {
-    if (map) {
-      if (map && !mapControls) {
-        const tileLayerOffline = MakeTileLayerOffline(Leaflet, map)
+  function addOfflineMapControls(): void {
+    if (map && !mapControls) {
+      const tileLayerOffline = MakeTileLayerOffline(Leaflet, map)
 
-        tileLayerOffline?.on('savestart', e => {
-          setTotalLayersToSave(e.lengthToBeSaved)
-        })
+      tileLayerOffline?.on('savestart', e => {
+        setTotalLayersToSave(e.lengthToBeSaved)
+      })
 
-        tileLayerOffline?.on('savetileend', () => {
-          setProgressSaveMap(currentProgress => currentProgress + 1)
-        })
+      tileLayerOffline?.on('savetileend', () => {
+        setProgressSaveMap(currentProgress => currentProgress + 1)
+      })
 
-        setMapControls(true)
-      }
-
-      Leaflet.control
-        .locate({
-          strings: {
-            popup: ({ distance }: { distance: number; unit: number }) => `você está a ${distance} metros deste ponto.`,
-          },
-        })
-        .addTo(map)
+      setMapControls(true)
     }
+  }
+
+  function addUserLocationHandler(): void {
+    if (!map) return
+
+    Leaflet.control
+      .locate({
+        strings: {
+          popup: ({ distance }: { distance: number; unit: number }) => `você está a ${distance} metros deste ponto.`,
+        },
+      })
+      .addTo(map)
+
+    map.on('locationfound', e => {
+      setPosition(e.latlng)
+    })
+  }
+
+  useEffect(() => {
+    addOfflineMapControls()
+    addUserLocationHandler()
 
     return () => {
       setMapControls(false)
     }
   }, [map])
-
-  // useEffect(() => {
-  //   if (polylines.length > 0 && map) {
-  //
-  //   }
-  // }, [polylines])
 
   return (
     <>
