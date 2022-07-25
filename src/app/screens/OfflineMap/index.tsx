@@ -5,6 +5,9 @@ import Leaflet, { LatLng } from 'leaflet'
 
 import 'leaflet.offline'
 import 'leaflet.locatecontrol'
+import 'leaflet.webgl-temperature-map'
+import '../../../libs/leaflet-heat'
+
 import { MakeTileLayerOffline } from './functions/TileLayerOffline'
 import { ICheckpoint } from './types/ICheckpoint'
 import { CheckpointMarker } from './components/CheckpointMarker'
@@ -177,6 +180,15 @@ function Map() {
       tileLayerOffline?.on('savetileend', () => {
         setProgressSaveMap(currentProgress => currentProgress + 1)
       })
+
+      const points = [
+        ...checkpoints.map(c => {
+          return [Number(c?.position.lat), Number(c?.position.lng), 50]
+        }),
+      ]
+
+      // @ts-ignore
+      Leaflet.heatLayer(points, { radius: 50 }).addTo(map)
 
       setMapControls(true)
     }

@@ -13,6 +13,7 @@
     "leaflet": "^1.8.0",
     "leaflet.locatecontrol": "^0.76.1",
     "leaflet.offline": "^2.2.0",
+    "leaflet.webgl-temperature-map": "^0.2.0",
     "react": "^18.1.0",
     "react-dom": "^18.1.0",
     "react-leaflet": "^4.0.0",
