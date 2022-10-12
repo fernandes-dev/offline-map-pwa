@@ -1,4 +1,4 @@
-/* eslint-disable no-alert */
+/* eslint-disable no-alert,no-console */
 import { MapContainer, TileLayer } from 'react-leaflet'
 import React, { FormEvent, useEffect, useState } from 'react'
 import Leaflet, { LatLng } from 'leaflet'
@@ -46,15 +46,15 @@ function Map() {
     localStorage.setItem('map-checkpoints', JSON.stringify(newCheckpoints))
   }
 
-  function verifyPolylineExists(destiny: ILatLng): boolean {
-    if (!position) return false
-
-    const existsPolyline = polylines.find(p =>
-      p.find(p2 => String(p2.lng) === String(destiny.lng) && String(p2.lat) === String(destiny.lat))
-    )
-
-    return !!existsPolyline
-  }
+  // function verifyPolylineExists(destiny: ILatLng): boolean {
+  //   if (!position) return false
+  //
+  //   const existsPolyline = polylines.find(p =>
+  //     p.find(p2 => String(p2.lng) === String(destiny.lng) && String(p2.lat) === String(destiny.lat))
+  //   )
+  //
+  //   return !!existsPolyline
+  // }
 
   // function handleAddPolyline(destiny: ILatLng): void {
   //   if (!map) return
@@ -162,6 +162,9 @@ function Map() {
   }
 
   useEffect(() => {
+    console.log('heatpoints', heatPoints)
+    console.log('setMapPolyline', setMapPolyline)
+
     if (position) navigatoTePosition(position)
 
     setMapViewOnUserLocation()
