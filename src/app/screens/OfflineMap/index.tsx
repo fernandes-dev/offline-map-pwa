@@ -5,12 +5,11 @@ import Leaflet, { LatLng } from 'leaflet'
 
 import 'leaflet.offline'
 import 'leaflet.locatecontrol'
-import 'leaflet.webgl-temperature-map'
+// import 'leaflet.webgl-temperature-map'
 import '../../../libs/leaflet-heat'
-
+import { CachedTileLayer } from '@yaga/leaflet-cached-tile-layer'
 import { MakeTileLayerOffline } from './functions/TileLayerOffline'
 import { ICheckpoint } from './types/ICheckpoint'
-import { CheckpointMarker } from './components/CheckpointMarker'
 
 type ILatLng = Pick<LatLng, 'lat' | 'lng'>
 
@@ -23,6 +22,8 @@ function Map() {
   const [polylines, setPolylines] = useState<ILatLng[][]>([])
   const [mapPolyline, setMapPolyline] = useState<Leaflet.Polyline<any>>()
   const [checkpoints, setCheckpoints] = useState<ICheckpoint[]>([])
+
+  const [heatPoints, setHeatPoints] = useState<any>()
 
   function navigatoTePosition(data: ILatLng, zoomLevel?: number): void {
     if (data) map?.setView(data, zoomLevel || map.getZoom())
@@ -55,28 +56,28 @@ function Map() {
     return !!existsPolyline
   }
 
-  function handleAddPolyline(destiny: ILatLng): void {
-    if (!map) return
-
-    const existsPolyline = verifyPolylineExists(destiny)
-
-    if (existsPolyline || !position) return
-
-    if (mapPolyline) {
-      mapPolyline.setLatLngs([...polylines, [destiny, position]])
-
-      map.fitBounds(mapPolyline.getBounds())
-    } else {
-      const polyline = Leaflet.polyline([...polylines, [destiny, position]], { color: 'red' })
-
-      polyline.addTo(map)
-
-      setMapPolyline(polyline)
-      map.fitBounds(polyline.getBounds())
-    }
-
-    setPolylines([...polylines, [destiny, position]])
-  }
+  // function handleAddPolyline(destiny: ILatLng): void {
+  //   if (!map) return
+  //
+  //   const existsPolyline = verifyPolylineExists(destiny)
+  //
+  //   if (existsPolyline || !position) return
+  //
+  //   if (mapPolyline) {
+  //     mapPolyline.setLatLngs([...polylines, [destiny, position]])
+  //
+  //     map.fitBounds(mapPolyline.getBounds())
+  //   } else {
+  //     const polyline = Leaflet.polyline([...polylines, [destiny, position]], { color: 'red' })
+  //
+  //     polyline.addTo(map)
+  //
+  //     setMapPolyline(polyline)
+  //     map.fitBounds(polyline.getBounds())
+  //   }
+  //
+  //   setPolylines([...polylines, [destiny, position]])
+  // }
 
   function handleRemovePolyline(destiny: ILatLng) {
     if (!map) return
@@ -106,30 +107,31 @@ function Map() {
     return (
       checkpoints.length > 0 &&
       checkpoints.map(marker => (
-        <CheckpointMarker
-          key={marker.id}
-          marker={marker}
-          positionToCompare={position}
-          checkPointDetails={
-            <>
-              <h3>{marker.text}</h3>
-              <div>
-                <b>Coordenadas</b>
-              </div>
-              <div>latitude: {marker.position.lat}</div>
-              <div>longitude: {marker.position.lng}</div>
-              {!verifyPolylineExists(marker.position) ? (
-                <button type="button" onClick={() => handleAddPolyline(marker.position)}>
-                  Marcar rota
-                </button>
-              ) : (
-                <button type="button" onClick={() => handleRemovePolyline(marker.position)}>
-                  Excluir rota
-                </button>
-              )}
-            </>
-          }
-        />
+        <div key={marker.id} />
+        // <CheckpointMarker
+        //   key={marker.id}
+        //   marker={marker}
+        //   positionToCompare={position}
+        //   checkPointDetails={
+        //     <>
+        //       <h3>{marker.text}</h3>
+        //       <div>
+        //         <b>Coordenadas</b>
+        //       </div>
+        //       <div>latitude: {marker.position.lat}</div>
+        //       <div>longitude: {marker.position.lng}</div>
+        //       {!verifyPolylineExists(marker.position) ? (
+        //         <button type="button" onClick={() => handleAddPolyline(marker.position)}>
+        //           Marcar rota
+        //         </button>
+        //       ) : (
+        //         <button type="button" onClick={() => handleRemovePolyline(marker.position)}>
+        //           Excluir rota
+        //         </button>
+        //       )}
+        //     </>
+        //   }
+        // />
       ))
     )
   }
@@ -137,7 +139,7 @@ function Map() {
   const renderMap = () => {
     return (
       position && (
-        <MapContainer id="map" center={position} zoom={13} ref={setMap} scrollWheelZoom={false}>
+        <MapContainer id="map" center={position} zoom={13} ref={setMap}>
           <TileLayer
             id="mapbox/streets-v11"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -169,6 +171,38 @@ function Map() {
     if (localStorageCheckpoints) setCheckpoints(JSON.parse(localStorageCheckpoints))
   }, [])
 
+  let heatLayer: any
+
+  function addHeatLayer() {
+    if (map) {
+      // @ts-ignore
+      heatLayer = Leaflet.heatLayer([], { radius: 50, blur: 25 }).addTo(map)
+    }
+  }
+
+  function addHeatPoints(points: any[]) {
+    heatLayer?.setLatLngs(points)
+
+    setHeatPoints(points)
+  }
+
+  function addCacheLayer() {
+    if (!map) return
+
+    new CachedTileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+      attribution: `<a href='http://osm.org/copyright'>OpenStreetMap</a> contributors`,
+      databaseName: 'tile-cache-data', // optional
+      databaseVersion: 1, // optional
+      objectStoreName: 'OSM', // optional
+      crawlDelay: 500, // optional
+      maxAge: 1000 * 60 * 60 * 24 * 7, // optional
+    }).addTo(map as any)
+  }
+
+  // useEffect(() => {
+  //   console.log(heatPoints)
+  // }, [heatPoints])
+
   function addOfflineMapControls(): void {
     if (map && !mapControls) {
       const tileLayerOffline = MakeTileLayerOffline(Leaflet, map)
@@ -181,16 +215,8 @@ function Map() {
         setProgressSaveMap(currentProgress => currentProgress + 1)
       })
 
-      const points = [
-        ...checkpoints.map(c => {
-          return [Number(c?.position.lat), Number(c?.position.lng), 50]
-        }),
-      ]
-
-      // @ts-ignore
-      Leaflet.heatLayer(points, { radius: 50 }).addTo(map)
-
       setMapControls(true)
+      addHeatPoints(checkpoints.map((c, index) => [Number(c?.position.lat), Number(c?.position.lng), index / 50]))
     }
   }
 
@@ -208,11 +234,23 @@ function Map() {
     map.on('locationfound', e => {
       setPosition(e.latlng)
     })
+
+    map.on('click', e => {
+      const newCheckpoint = { id: Math.random(), position: (e as any).latlng, text: `teste${Math.random()}` }
+      const newCheckpoints = [...JSON.parse(localStorage.getItem('map-checkpoints')!), newCheckpoint]
+
+      setCheckpoints(newCheckpoints)
+      addHeatPoints(newCheckpoints.map(c => [Number(c?.position.lat), Number(c?.position.lng), 1]))
+
+      localStorage.setItem('map-checkpoints', JSON.stringify(newCheckpoints))
+    })
   }
 
   useEffect(() => {
     addOfflineMapControls()
     addUserLocationHandler()
+    addHeatLayer()
+    addCacheLayer()
 
     return () => {
       setMapControls(false)

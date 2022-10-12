@@ -20,7 +20,7 @@ function CheckpointMarker({ marker, checkPointDetails, positionToCompare }: IPro
       position={marker.position}
       icon={
         new Icon({
-          iconUrl: '/icons/circle-icon.png',
+          iconUrl: '../icons/circle-icon.png',
           iconSize: [25, 25],
         })
       }
