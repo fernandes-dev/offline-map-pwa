@@ -1,3 +1,5 @@
+// const Dotenv = require('dotenv-webpack')
+
 module.exports = function override(config, _) {
   console.log('override')
   let loaders = config.resolve
@@ -15,6 +17,5 @@ module.exports = function override(config, _) {
     'url': require.resolve('url/'),
     'querystring': require.resolve('querystring-es3')
   }
-
   return config
 }

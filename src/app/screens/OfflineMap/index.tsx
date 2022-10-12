@@ -7,7 +7,6 @@ import 'leaflet.offline'
 import 'leaflet.locatecontrol'
 // import 'leaflet.webgl-temperature-map'
 import '../../../libs/leaflet-heat'
-import { CachedTileLayer } from '@yaga/leaflet-cached-tile-layer'
 import { MakeTileLayerOffline } from './functions/TileLayerOffline'
 import { ICheckpoint } from './types/ICheckpoint'
 
@@ -189,19 +188,6 @@ function Map() {
     setHeatPoints(points)
   }
 
-  function addCacheLayer() {
-    if (!map) return
-
-    new CachedTileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-      attribution: `<a href='http://osm.org/copyright'>OpenStreetMap</a> contributors`,
-      databaseName: 'tile-cache-data', // optional
-      databaseVersion: 1, // optional
-      objectStoreName: 'OSM', // optional
-      crawlDelay: 500, // optional
-      maxAge: 1000 * 60 * 60 * 24 * 7, // optional
-    }).addTo(map as any)
-  }
-
   // useEffect(() => {
   //   console.log(heatPoints)
   // }, [heatPoints])
@@ -253,7 +239,6 @@ function Map() {
     addOfflineMapControls()
     addUserLocationHandler()
     addHeatLayer()
-    addCacheLayer()
 
     return () => {
       setMapControls(false)
