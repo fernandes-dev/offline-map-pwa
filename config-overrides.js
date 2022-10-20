@@ -1,21 +1,18 @@
-// const Dotenv = require('dotenv-webpack')
+/* config-overrides.js */
+
+const WorkboxWebpackPlugin = require('workbox-webpack-plugin')
 
 module.exports = function override(config, _) {
-  console.log('override')
-  let loaders = config.resolve
-  loaders.fallback = {
-    'fs': false,
-    'tls': false,
-    'net': false,
-    'http': require.resolve('stream-http'),
-    'https': false,
-    'zlib': require.resolve('browserify-zlib'),
-    'path': require.resolve('path-browserify'),
-    'stream': require.resolve('stream-browserify'),
-    'util': require.resolve('util/'),
-    'crypto': require.resolve('crypto-browserify'),
-    'url': require.resolve('url/'),
-    'querystring': require.resolve('querystring-es3')
-  }
+  config.plugins = config.plugins.map(plugin => {
+    if (plugin.constructor.name === 'GenerateSW') {
+      return new WorkboxWebpackPlugin.InjectManifest({
+        swSrc: './src/sw.js',
+        swDest: 'service-worker.js'
+      })
+    }
+
+    return plugin
+  })
+
   return config
 }
