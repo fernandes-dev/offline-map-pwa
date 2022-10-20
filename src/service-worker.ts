@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 /* eslint-disable */
-// noinspection JSFileReferences
+// noinspection SpellCheckingInspection,JSFileReferences
 
 // This service worker can be customized!
 // See https://developers.google.com/web/tools/workbox/modules
@@ -23,7 +23,19 @@ clientsClaim()
 // Their URLs are injected into the manifest variable below.
 // This variable must be present somewhere in your service worker file,
 // even if you decide not to use precaching. See https://cra.link/PWA
-precacheAndRoute(self.__WB_MANIFEST)
+precacheAndRoute([
+  ...self.__WB_MANIFEST,
+  { url: 'https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.css' },
+  { url: 'https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js' },
+  {
+    url: 'https://unpkg.com/leaflet@1.8.0/dist/leaflet.css',
+    integrity: 'sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ=='
+  },
+  {
+    url: 'https://unpkg.com/leaflet@1.8.0/dist/leaflet.js',
+    integrity: 'sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ=='
+  }
+])
 
 // Set up App Shell-style routing, so that all navigation requests
 // are fulfilled with your index.html shell. Learn more at
@@ -58,7 +70,7 @@ registerRoute(
 // precache, in this case same-origin .png requests like those from in public/
 registerRoute(
   // Add in any other file extensions or routing criteria as needed.
-  ({ url }) => url.pathname.endsWith('.png') || url.pathname.endsWith('.jpg') || url.pathname.endsWith('.jpeg') || url.pathname.endsWith('.ico'),
+  ({ url }) => url.origin === self.location.origin && url.pathname.endsWith('.png'),
   // Customize this strategy as needed, e.g., by changing to CacheFirst.
   new StaleWhileRevalidate({
     cacheName: 'images',
@@ -69,7 +81,6 @@ registerRoute(
     ]
   })
 )
-
 
 // This allows the web app to trigger skipWaiting via
 // registration.waiting.postMessage({type: 'SKIP_WAITING'})
