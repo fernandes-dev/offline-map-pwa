@@ -23,19 +23,7 @@ clientsClaim()
 // Their URLs are injected into the manifest variable below.
 // This variable must be present somewhere in your service worker file,
 // even if you decide not to use precaching. See https://cra.link/PWA
-precacheAndRoute([
-  ...self.__WB_MANIFEST,
-  { url: 'https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.css' },
-  { url: 'https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js' },
-  {
-    url: 'https://unpkg.com/leaflet@1.8.0/dist/leaflet.css',
-    integrity: 'sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ=='
-  },
-  {
-    url: 'https://unpkg.com/leaflet@1.8.0/dist/leaflet.js',
-    integrity: 'sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ=='
-  }
-])
+precacheAndRoute(self.__WB_MANIFEST)
 
 // Set up App Shell-style routing, so that all navigation requests
 // are fulfilled with your index.html shell. Learn more at
