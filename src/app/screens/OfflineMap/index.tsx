@@ -22,6 +22,7 @@ function Map() {
   const [mapPolyline, setMapPolyline] = useState<Leaflet.Polyline<any>>()
   const [checkpoints, setCheckpoints] = useState<ICheckpoint[]>([])
 
+  let heatLayer: any
   const [heatPoints, setHeatPoints] = useState<any>()
 
   function navigatoTePosition(data: ILatLng, zoomLevel?: number): void {
@@ -45,38 +46,11 @@ function Map() {
     localStorage.setItem('map-checkpoints', JSON.stringify(newCheckpoints))
   }
 
-  // function verifyPolylineExists(destiny: ILatLng): boolean {
-  //   if (!position) return false
-  //
-  //   const existsPolyline = polylines.find(p =>
-  //     p.find(p2 => String(p2.lng) === String(destiny.lng) && String(p2.lat) === String(destiny.lat))
-  //   )
-  //
-  //   return !!existsPolyline
-  // }
+  function resetHeatLayerRender() {
+    const elements = document.getElementsByClassName('leaflet-pane leaflet-overlay-pane')
 
-  // function handleAddPolyline(destiny: ILatLng): void {
-  //   if (!map) return
-  //
-  //   const existsPolyline = verifyPolylineExists(destiny)
-  //
-  //   if (existsPolyline || !position) return
-  //
-  //   if (mapPolyline) {
-  //     mapPolyline.setLatLngs([...polylines, [destiny, position]])
-  //
-  //     map.fitBounds(mapPolyline.getBounds())
-  //   } else {
-  //     const polyline = Leaflet.polyline([...polylines, [destiny, position]], { color: 'red' })
-  //
-  //     polyline.addTo(map)
-  //
-  //     setMapPolyline(polyline)
-  //     map.fitBounds(polyline.getBounds())
-  //   }
-  //
-  //   setPolylines([...polylines, [destiny, position]])
-  // }
+    ;(elements[0] as any)?.click()
+  }
 
   function handleRemovePolyline(destiny: ILatLng) {
     if (!map) return
@@ -93,6 +67,13 @@ function Map() {
     setPolylines(newPolylines)
   }
 
+  function addHeatPoints(points: any[]) {
+    heatLayer?.setLatLngs(points)
+
+    setHeatPoints(points)
+    resetHeatLayerRender()
+  }
+
   function deleteCheckpoint(index: number) {
     handleRemovePolyline(checkpoints[index].position)
 
@@ -100,39 +81,12 @@ function Map() {
 
     setCheckpoints(newCheckpoints)
     localStorage.setItem('map-checkpoints', JSON.stringify(newCheckpoints))
+
+    addHeatPoints(newCheckpoints.map(c => [Number(c?.position.lat), Number(c?.position.lng), 1]))
   }
 
   const renderCheckpoints = () => {
-    return (
-      checkpoints.length > 0 &&
-      checkpoints.map(marker => (
-        <div key={marker.id} />
-        // <CheckpointMarker
-        //   key={marker.id}
-        //   marker={marker}
-        //   positionToCompare={position}
-        //   checkPointDetails={
-        //     <>
-        //       <h3>{marker.text}</h3>
-        //       <div>
-        //         <b>Coordenadas</b>
-        //       </div>
-        //       <div>latitude: {marker.position.lat}</div>
-        //       <div>longitude: {marker.position.lng}</div>
-        //       {!verifyPolylineExists(marker.position) ? (
-        //         <button type="button" onClick={() => handleAddPolyline(marker.position)}>
-        //           Marcar rota
-        //         </button>
-        //       ) : (
-        //         <button type="button" onClick={() => handleRemovePolyline(marker.position)}>
-        //           Excluir rota
-        //         </button>
-        //       )}
-        //     </>
-        //   }
-        // />
-      ))
-    )
+    return checkpoints.length > 0 && checkpoints.map(marker => <div key={marker.id} />)
   }
 
   const renderMap = () => {
@@ -161,9 +115,6 @@ function Map() {
   }
 
   useEffect(() => {
-    console.log('heatpoints', heatPoints)
-    console.log('setMapPolyline', setMapPolyline)
-
     if (position) navigatoTePosition(position)
 
     setMapViewOnUserLocation()
@@ -173,19 +124,13 @@ function Map() {
     if (localStorageCheckpoints) setCheckpoints(JSON.parse(localStorageCheckpoints))
   }, [])
 
-  let heatLayer: any
-
   function addHeatLayer() {
     if (map) {
       // @ts-ignore
       heatLayer = Leaflet.heatLayer([], { radius: 50, blur: 25 }).addTo(map)
+
+      resetHeatLayerRender()
     }
-  }
-
-  function addHeatPoints(points: any[]) {
-    heatLayer?.setLatLngs(points)
-
-    setHeatPoints(points)
   }
 
   // useEffect(() => {
@@ -224,14 +169,30 @@ function Map() {
       setPosition(e.latlng)
     })
 
-    map.on('click', e => {
-      const newCheckpoint = { id: Math.random(), position: (e as any).latlng, text: `teste${Math.random()}` }
-      const newCheckpoints = [...JSON.parse(localStorage.getItem('map-checkpoints')!), newCheckpoint]
+    map.on('click', (e: any) => {
+      if (e.originalEvent.pointerType !== 'mouse') return
 
+      const currentCheckpoints = localStorage.getItem('map-checkpoints') || '[]'
+
+      const newCheckpoint = { id: Math.random(), position: (e as any).latlng, text: `teste${Math.random()}` }
+      const newCheckpoints = [...JSON.parse(currentCheckpoints), newCheckpoint]
       setCheckpoints(newCheckpoints)
       addHeatPoints(newCheckpoints.map(c => [Number(c?.position.lat), Number(c?.position.lng), 1]))
 
       localStorage.setItem('map-checkpoints', JSON.stringify(newCheckpoints))
+      console.log('adicionou ponto')
+
+      resetHeatLayerRender()
+    })
+
+    map.on('click', (e: any) => {
+      if (e.originalEvent.pointerType === 'mouse') return
+
+      const currentCheckpoints = localStorage.getItem('map-checkpoints') || '[]'
+
+      const newCheckpoints = [...JSON.parse(currentCheckpoints)]
+
+      addHeatPoints(newCheckpoints.map(c => [Number(c?.position.lat), Number(c?.position.lng), 1]))
     })
   }
 
